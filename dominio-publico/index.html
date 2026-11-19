@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Já é de todo mundo?</title>
+<meta name="description" content="Digite um artista, escritor ou compositor e descubra se a obra já está em domínio público no Brasil, ou quanto tempo falta.">
+<meta property="og:title" content="Já é de todo mundo?">
+<meta property="og:description" content="Descubra se a obra de um artista já está em domínio público no Brasil, ou quanto tempo falta pra ela ser de todo mundo.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Inter+Tight:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F1ECE2; --ink:#141210; --mute:#8C857A; --line:#D6CEC0;
+  --free:#1E7A4A; --lock:#E2491C; --chip:#E7E0D3;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#141210; --ink:#F1ECE2; --mute:#8F887C; --line:#2E2A25;
+    --free:#4FD18B; --lock:#FF6A3D; --chip:#211E1A;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#141210; --ink:#F1ECE2; --mute:#8F887C; --line:#2E2A25;
+  --free:#4FD18B; --lock:#FF6A3D; --chip:#211E1A;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:"Inter Tight",system-ui,sans-serif;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+.mono{font-family:"Space Mono",ui-monospace,monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+@media (max-width:640px){.wrap{padding:0 16px}}
+
+/* top bar */
+.bar{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;justify-content:space-between;align-items:center;height:48px;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+.bar nav a{margin-left:20px;text-decoration:none;color:var(--mute)}
+.bar nav a:hover{color:var(--ink)}
+@media (max-width:640px){.bar nav a.hide-s{display:none}.bar nav a{margin-left:14px}.bar .brand{display:none}}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:56px 0 24px;min-height:calc(100vh - 120px)}
+@media (max-width:900px){.hero{grid-template-columns:1fr;min-height:0;padding:36px 0 24px;gap:8px}}
+h1{font-family:"Instrument Serif",serif;font-weight:400;font-size:clamp(56px,9vw,128px);line-height:.9;letter-spacing:-.02em}
+h1 em{font-style:italic}
+.lede{margin:22px 0 28px;max-width:520px;color:var(--mute);font-size:17px}
+.search{position:relative;max-width:560px}
+.search input{width:100%;font:inherit;font-size:22px;padding:16px 56px 16px 18px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);border-radius:0;outline:none}
+.search input::placeholder{color:var(--mute)}
+.search input:focus{box-shadow:4px 4px 0 var(--ink)}
+.search .k{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--mute)}
+.sugg{position:absolute;left:0;right:0;top:100%;background:var(--paper);border:1.5px solid var(--ink);border-top:0;z-index:5;max-height:320px;overflow:auto;display:none}
+.sugg button{display:flex;justify-content:space-between;width:100%;text-align:left;font:inherit;padding:10px 18px;background:none;border:0;border-top:1px solid var(--line);color:var(--ink);cursor:pointer}
+.sugg button:hover,.sugg button.on{background:var(--chip)}
+.sugg small{color:var(--mute);font-family:"Space Mono",monospace;font-size:11px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chips button{font:inherit;font-size:13px;padding:6px 12px;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;cursor:pointer;transition:transform .15s}
+.chips button:hover{transform:translateY(-2px);border-color:var(--ink)}
+
+.stage{position:relative;aspect-ratio:1/1;width:100%;max-width:520px;justify-self:center}
+.stage canvas{width:100%;height:100%;display:block;cursor:pointer}
+.stage .hint{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:11px;color:var(--mute)}
+@media (max-width:900px){.stage{max-width:260px;order:-1}}
+@media (hover:none){.stage .hint{display:none}}
+
+/* result */
+.result{border-top:1.5px solid var(--ink);padding:22px 0 0;margin-top:28px;display:none;max-width:620px}
+.result.show{display:block;animation:rise .5s cubic-bezier(.2,.8,.2,1)}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.r-grid{display:grid;grid-template-columns:1fr;gap:14px}
+.r-who{font-size:13px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.verdict{font-family:"Instrument Serif",serif;font-size:clamp(44px,6vw,80px);line-height:.95;margin:8px 0 10px}
+.verdict.free{color:var(--free)} .verdict.lock{color:var(--lock)}
+.r-sub{font-size:17px}
+.count{display:flex;gap:14px}
+.count div{text-align:left;min-width:56px}
+.count b{display:block;font-family:"Space Mono",monospace;font-size:clamp(26px,3.2vw,38px);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.count span{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.r-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.btn{font:inherit;font-size:14px;padding:10px 16px;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn:hover{box-shadow:3px 3px 0 var(--mute)}
+.note{font-size:13px;color:var(--mute);margin-top:14px;max-width:720px}
+
+/* calculator */
+.calc{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:15px}
+.calc input{width:96px;font:inherit;font-family:"Space Mono",monospace;padding:6px 8px;border:1px solid var(--ink);background:transparent;color:var(--ink)}
+.calc output{font-weight:700}
+
+/* sections */
+section.blk{padding:72px 0;border-top:1px solid var(--line)}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin-bottom:12px}
+h2{font-family:"Instrument Serif",serif;font-weight:400;font-size:clamp(36px,5vw,64px);line-height:1;margin-bottom:18px}
+h2 em{font-style:italic}
+
+/* time machine */
+.tm-head{display:flex;justify-content:space-between;align-items:end;gap:24px;flex-wrap:wrap;margin-bottom:22px}
+.year{font-family:"Space Mono",monospace;font-size:clamp(64px,11vw,148px);font-weight:700;line-height:.85;font-variant-numeric:tabular-nums}
+.tally{font-size:15px;max-width:340px}
+.tally b{font-family:"Space Mono",monospace}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;cursor:ew-resize}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--ink)}
+input[type=range]::-moz-range-track{height:2px;background:var(--ink)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--ink);margin-top:-10px;border:4px solid var(--paper);box-shadow:0 0 0 1.5px var(--ink)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--ink);border:4px solid var(--paper)}
+.ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--mute);margin-top:2px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin:22px 0 18px}
+.filters button{font:inherit;font-size:13px;padding:5px 12px;border:1px solid var(--line);background:transparent;color:var(--mute);border-radius:999px;cursor:pointer}
+.filters button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.wall{display:flex;flex-wrap:wrap;gap:4px 18px;font-family:"Instrument Serif",serif;font-size:clamp(22px,2.6vw,34px);line-height:1.15}
+.wall button{font:inherit;background:none;border:0;color:var(--line);cursor:pointer;transition:color .45s, opacity .45s;text-align:left;padding:0}
+.wall button.f{color:var(--ink)}
+.wall button.f::after{content:"";display:inline-block;width:.28em;height:.28em;border-radius:50%;background:var(--free);margin-left:.12em;vertical-align:.5em}
+.wall button.live{color:var(--line);font-style:italic}
+.wall button:hover{color:var(--lock)}
+.legend{display:flex;gap:18px;font-size:12px;color:var(--mute);margin-top:18px;flex-wrap:wrap}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+
+/* years list */
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+@media (max-width:760px){.pair{grid-template-columns:1fr;gap:28px}}
+.card{border:1.5px solid var(--ink);padding:24px}
+.card h3{font-family:"Space Mono",monospace;font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;display:flex;justify-content:space-between}
+.card ul{list-style:none}
+.card li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:17px;cursor:pointer}
+.card li:hover{color:var(--lock)}
+.card li small{color:var(--mute);font-size:13px}
+
+/* rules */
+.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:18px}
+@media (max-width:860px){.rules{grid-template-columns:1fr}}
+.rule .n{font-family:"Space Mono",monospace;font-size:12px;color:var(--mute)}
+.rule h4{font-size:20px;font-weight:700;margin:6px 0 8px;line-height:1.2}
+.rule p{color:var(--mute);font-size:15px}
+.fine{margin-top:36px;padding:20px;background:var(--chip);font-size:14px;max-width:860px}
+.fine li{margin:6px 0 6px 18px}
+
+footer{border-top:1.5px solid var(--ink);padding:28px 0 40px;font-size:13px;color:var(--mute)}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--paper);padding:10px 16px;font-size:14px;transition:transform .3s;z-index:20}
+.toast.on{transform:translateX(-50%)}
+</style>
+</head>
+<body>
+
+<header class="bar"><div class="wrap mono">
+  <span class="brand">Já é de todo mundo?</span>
+  <nav><a href="#tempo">Máquina do tempo</a><a class="hide-s" href="#ano">Quem entra</a><a href="#regra">A regra</a></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="hero">
+    <div>
+      <h1>Já é de<br><em>todo mundo?</em></h1>
+      <p class="lede">Digite um artista, escritor ou compositor e descubra se a obra já está em domínio público no Brasil. Se ainda não está, veja quanto tempo falta.</p>
+      <div class="search">
+        <input id="q" type="text" autocomplete="off" spellcheck="false" placeholder="Tarsila, Noel Rosa, Frida…" aria-label="Buscar artista">
+        <span class="k mono">ENTER</span>
+        <div class="sugg" id="sugg" role="listbox"></div>
+      </div>
+      <div class="chips" id="chips"></div>
+  <div class="result" id="result">
+        <div class="r-grid">
+          <div>
+            <div class="r-who mono" id="rWho"></div>
+            <div class="verdict" id="rVerdict"></div>
+            <p class="r-sub" id="rSub"></p>
+          </div>
+          <div class="count" id="rCount"></div>
+        </div>
+        <div class="r-actions">
+          <button class="btn" id="share">Compartilhar resultado</button>
+          <button class="btn ghost" id="again">Buscar outro nome</button>
+        </div>
+        <p class="note" id="rNote"></p>
+      </div>
+
+    </div>
+    <div class="stage">
+      <canvas id="cv" aria-hidden="true"></canvas>
+      <div class="hint mono">passe o mouse e clique no ©</div>
+    </div>
+  </div>
+
+  <div class="note" style="margin:8px 0 56px">
+    <div class="calc">Não achou quem procurava? Ano da morte:
+      <input id="calcY" type="number" inputmode="numeric" placeholder="1977" min="1000" max="2100">
+      <output id="calcOut" class="mono"></output>
+    </div>
+  </div>
+</main>
+
+<section class="blk" id="tempo"><div class="wrap">
+  <div class="eyebrow mono">Máquina do tempo</div>
+  <div class="tm-head">
+    <div>
+      <h2>Arraste o tempo e veja<br><em>a cultura se libertar.</em></h2>
+      <p class="tally" id="tally"></p>
+    </div>
+    <div class="year" id="yearOut">2026</div>
+  </div>
+  <input type="range" id="yr" min="1900" max="2100" value="2026" aria-label="Ano">
+  <div class="ticks mono"><span>1900</span><span>1950</span><span>2000</span><span>2050</span><span>2100</span></div>
+  <div class="filters" id="filters"></div>
+  <div class="wall" id="wall"></div>
+  <div class="legend mono">
+    <span><i style="background:var(--free)"></i>de todo mundo naquele ano</span>
+    <span><i style="background:var(--line)"></i>ainda protegido</span>
+    <span><i style="background:transparent;border:1px solid var(--mute)"></i><em>itálico</em> = ainda entre nós</span>
+  </div>
+</div></section>
+
+<section class="blk" id="ano"><div class="wrap">
+  <div class="eyebrow mono">Todo 1º de janeiro</div>
+  <h2>Quem acabou de entrar<br><em>e quem vem aí.</em></h2>
+  <div class="pair" style="margin-top:28px">
+    <div class="card"><h3><span>Entrou em 2026</span><span>morreu em 1955</span></h3><ul id="y2026"></ul></div>
+    <div class="card"><h3><span>Entra em 2027</span><span>morreu em 1956</span></h3><ul id="y2027"></ul></div>
+  </div>
+</div></section>
+
+<section class="blk" id="regra"><div class="wrap">
+  <div class="eyebrow mono">Como funciona</div>
+  <h2>A regra cabe<br><em>numa linha.</em></h2>
+  <div class="rules">
+    <div class="rule"><div class="n">01</div><h4>70 anos depois da morte</h4><p>No Brasil, os direitos patrimoniais duram a vida do autor e mais 70 anos (Lei 9.610/98, art. 41).</p></div>
+    <div class="rule"><div class="n">02</div><h4>Contados a partir de 1º de janeiro</h4><p>A contagem começa no 1º de janeiro do ano seguinte à morte. Quem morreu em 1956, em qualquer dia, entra em domínio público em 1º de janeiro de 2027.</p></div>
+    <div class="rule"><div class="n">03</div><h4>Parceria conta pelo último</h4><p>Em obra feita a quatro mãos, o prazo corre a partir da morte do último coautor vivo (art. 42). Uma música com letra e melodia de pessoas diferentes só libera quando as duas partes liberarem.</p></div>
+  </div>
+  <div class="fine">
+    <b>Antes de usar, vale saber:</b>
+    <ul>
+      <li>A obra cai em domínio público, mas a <b>gravação</b> tem direitos próprios, de quem interpretou e de quem produziu (art. 96). Dá pra regravar Noel Rosa, mas não usar uma gravação recente sem licença.</li>
+      <li><b>Traduções, edições, arranjos e restaurações</b> podem ser obras novas e protegidas. A obra original é livre, aquela versão específica pode não ser.</li>
+      <li><b>Fotografia e audiovisual</b> seguem outra contagem: 70 anos a partir da divulgação (art. 44). Por isso fotógrafos e cineastas ainda não estão nesta base.</li>
+      <li>Os <b>direitos morais</b> nunca acabam: o nome do autor continua sendo do autor, e a obra não pode ser atribuída a outra pessoa.</li>
+      <li>Marcas registradas, personagens licenciados e direito de imagem são outra história.</li>
+    </ul>
+    <p style="margin-top:10px;color:var(--mute)">Isto é uma ferramenta de referência e não substitui orientação jurídica.</p>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <span>Um projeto de <a href="https://stefanireis.works">Stefani Reis</a>.</span>
+  <span id="foot"></span>
+</div></footer>
+<div class="toast" id="toast"></div>
+
+<script>
+// [nome, ano da morte (null = vivo), área, nota opcional]
+const L="literatura",M="música",A="artes visuais",Q="arquitetura & design",T="teatro & TV",I="internacional";
+const RAW=[
+["Machado de Assis",1908,L],["José de Alencar",1877,L],["Castro Alves",1871,L],["Gonçalves Dias",1864,L],["Álvares de Azevedo",1852,L],
+["Euclides da Cunha",1909,L],["Lima Barreto",1922,L],["Aluísio Azevedo",1913,L],["Raul Pompeia",1895,L],["Olavo Bilac",1918,L],
+["Cruz e Sousa",1898,L],["Augusto dos Anjos",1914,L],["Maria Firmina dos Reis",1917,L],["Luiz Gama",1882,L],["Júlia Lopes de Almeida",1934,L],
+["Monteiro Lobato",1948,L],["Mário de Andrade",1945,L],["Oswald de Andrade",1954,L],["Manuel Bandeira",1968,L],["Cecília Meireles",1964,L],
+["Carlos Drummond de Andrade",1987,L],["Graciliano Ramos",1953,L],["José Lins do Rego",1957,L],["Jorge de Lima",1953,L],["Murilo Mendes",1975,L],
+["Rachel de Queiroz",2003,L],["Jorge Amado",2001,L],["Guimarães Rosa",1967,L],["Clarice Lispector",1977,L],["Carolina Maria de Jesus",1977,L],
+["Nelson Rodrigues",1980,L],["Erico Verissimo",1975,L],["Cora Coralina",1985,L],["João Cabral de Melo Neto",1999,L],["Mário Quintana",1994,L],
+["Ariano Suassuna",2014,L],["Hilda Hilst",2004,L],["Paulo Leminski",1989,L],["Ana Cristina Cesar",1983,L],["Ferreira Gullar",2016,L],
+["Manoel de Barros",2014,L],["Lygia Fagundes Telles",2022,L],["Rubem Fonseca",2020,L],["Dalton Trevisan",2024,L],["Caio Fernando Abreu",1996,L],
+["Millôr Fernandes",2012,L],["Patativa do Assaré",2002,L],["Leandro Gomes de Barros",1918,L],["Ziraldo",2024,L],["Gilberto Freyre",1987,L],
+["Sérgio Buarque de Holanda",1982,L],["Darcy Ribeiro",1997,L],["Paulo Freire",1997,L],["Lélia Gonzalez",1994,L],["Abdias Nascimento",2011,L],
+["Adélia Prado",null,L],["Conceição Evaristo",null,L],["Paulo Coelho",null,L],["Mauricio de Sousa",null,L],["Ruth Rocha",null,L],["Ailton Krenak",null,L],["Milton Hatoum",null,L],
+["Chiquinha Gonzaga",1935,M],["Ernesto Nazareth",1934,M],["Carlos Gomes",1896,M],["Heitor Villa-Lobos",1959,M],["Pixinguinha",1973,M],
+["Noel Rosa",1937,M],["Ary Barroso",1964,M],["Lamartine Babo",1963,M],["Braguinha",2006,M],["Ismael Silva",1978,M],
+["Cartola",1980,M],["Nelson Cavaquinho",1986,M],["Adoniran Barbosa",1982,M],["Dorival Caymmi",2008,M],["Lupicínio Rodrigues",1974,M],
+["Ataulfo Alves",1969,M],["Assis Valente",1958,M],["Geraldo Pereira",1955,M],["Wilson Batista",1968,M],["Luiz Gonzaga",1989,M],
+["Humberto Teixeira",1979,M],["Jackson do Pandeiro",1982,M],["Dominguinhos",2013,M],["Tom Jobim",1994,M],["Vinicius de Moraes",1980,M],
+["Newton Mendonça",1960,M],["Baden Powell",2000,M],["Johnny Alf",2010,M],["Carlos Lyra",2023,M],["João Donato",2023,M],
+["Paulo Vanzolini",2013,M],["Tim Maia",1998,M],["Raul Seixas",1989,M],["Cazuza",1990,M],["Renato Russo",1996,M],
+["Chico Science",1997,M],["Gonzaguinha",1991,M],["Belchior",2017,M],["Torquato Neto",1972,M],["Itamar Assumpção",2003,M],
+["Luiz Melodia",2017,M],["Aldir Blanc",2020,M],["Moraes Moreira",2020,M],["Rita Lee",2023,M],["Erasmo Carlos",2022,M],
+["Dona Ivone Lara",2018,M],["Sabotage",2003,M],["Marília Mendonça",2021,M],
+["Caetano Veloso",null,M],["Gilberto Gil",null,M],["Chico Buarque",null,M],["Milton Nascimento",null,M],["Jorge Ben Jor",null,M],
+["Paulinho da Viola",null,M],["Martinho da Vila",null,M],["Tom Zé",null,M],["Djavan",null,M],["Marisa Monte",null,M],
+["Roberto Carlos",null,M],["Mano Brown",null,M],["Emicida",null,M],["Criolo",null,M],["Alceu Valença",null,M],
+["Aleijadinho",1814,A],["Mestre Valentim",1813,A],["Victor Meirelles",1903,A],["Pedro Américo",1905,A],["Almeida Júnior",1899,A],
+["Eliseu Visconti",1944,A],["Anita Malfatti",1964,A],["Tarsila do Amaral",1973,A],["Di Cavalcanti",1976,A],["Lasar Segall",1957,A],
+["Vicente do Rego Monteiro",1970,A],["Ismael Nery",1934,A],["Victor Brecheret",1955,A],["Cândido Portinari",1962,A],["Alfredo Volpi",1988,A],
+["Djanira",1979,A],["Heitor dos Prazeres",1966,A],["Mestre Vitalino",1963,A],["Lygia Clark",1988,A],["Hélio Oiticica",1980,A],
+["Lygia Pape",2004,A],["Amilcar de Castro",2002,A],["Tomie Ohtake",2015,A],["Rubem Valentim",1991,A],["Arthur Bispo do Rosário",1989,A],
+["Henfil",1988,A],["Glauco Villas Boas",2010,A],
+["Beatriz Milhazes",null,A],["Adriana Varejão",null,A],["Rosana Paulino",null,A],["Laerte",null,A],
+["Athos Bulcão",2008,Q],["Roberto Burle Marx",1994,Q],["Lina Bo Bardi",1992,Q],["Oscar Niemeyer",2012,Q],["Lucio Costa",1998,Q],
+["Vilanova Artigas",1985,Q],["Paulo Mendes da Rocha",2021,Q],["Aloísio Magalhães",1982,Q],["Alexandre Wollner",2018,Q],["Rogério Duarte",2016,Q],
+["Elifas Andreato",2022,Q],["Geraldo de Barros",1998,Q],
+["Dias Gomes",1999,T],["Janete Clair",1983,T],["Plínio Marcos",1999,T],["Gianfrancesco Guarnieri",2006,T],["Augusto Boal",2009,T],["Zé Celso",2023,T],
+["Leonardo da Vinci",1519,I],["William Shakespeare",1616,I],["Jane Austen",1817,I],["Vincent van Gogh",1890,I],["Claude Monet",1926,I],
+["Gustav Klimt",1918,I],["Franz Kafka",1924,I],["Fernando Pessoa",1935,I],["Virginia Woolf",1941,I],["Piet Mondrian",1944,I],
+["Wassily Kandinsky",1944,I],["Henri Matisse",1954,I],["Frida Kahlo",1954,I],["Thomas Mann",1955,I],["Fernand Léger",1955,I],
+["Bertolt Brecht",1956,I],["Jackson Pollock",1956,I],["A. A. Milne",1956,I,"O livro do Ursinho Pooh libera; o Pooh da Disney, com camiseta vermelha, é outra criação."],["Emil Nolde",1956,I],["Lyonel Feininger",1956,I],
+["Albert Camus",1960,I],["Ernest Hemingway",1961,I],["Walt Disney",1966,I,"Os personagens e filmes do estúdio têm regras e marcas próprias."],["René Magritte",1967,I],["Pablo Picasso",1973,I],
+["J. R. R. Tolkien",1973,I],["Pablo Neruda",1973,I],["Agatha Christie",1976,I],["Charlie Chaplin",1977,I],["John Lennon",1980,I,"Nas músicas com Paul McCartney, vale o prazo do último coautor vivo."],
+["Andy Warhol",1987,I],["Salvador Dalí",1989,I],["Keith Haring",1990,I],["Freddie Mercury",1991,I],["José Saramago",2010,I],
+["Gabriel García Márquez",2014,I],["David Bowie",2016,I],["Akira Toriyama",2024,I],["Paul McCartney",null,I],["Yayoi Kusama",null,I]
+];
+const norm=s=>s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9 ]/g,"").trim();
+const slug=s=>norm(s).replace(/ +/g,"-");
+const DB=RAW.map(([n,d,a,note])=>({n,d,a,note,k:norm(n),s:slug(n),free:d?d+71:null}));
+const NOW=new Date(); const YEAR=NOW.getFullYear();
+const $=id=>document.getElementById(id);
+const fmt=n=>n.toLocaleString("pt-BR");
+
+/* ---------- search ---------- */
+const q=$("q"), sugg=$("sugg"); let hi=-1, list=[];
+function match(t){t=norm(t); if(!t) return [];
+  return DB.filter(p=>p.k.includes(t)).sort((a,b)=>(a.k.startsWith(t)?0:1)-(b.k.startsWith(t)?0:1)||a.k.indexOf(t)-b.k.indexOf(t)).slice(0,8)}
+function label(p){ if(!p.d) return "entre nós"; return p.free<=YEAR?"livre desde "+p.free:"libera em "+p.free }
+function renderSugg(){ list=match(q.value); hi=list.length?0:-1;
+  if(!list.length){sugg.style.display=q.value.trim()?"block":"none"; sugg.innerHTML=q.value.trim()?'<button disabled><span>Ainda não está na base.</span><small>use a calculadora abaixo</small></button>':""; return}
+  sugg.innerHTML=list.map((p,i)=>`<button class="${i===hi?'on':''}" data-i="${i}"><span>${p.n}</span><small>${label(p)}</small></button>`).join("");
+  sugg.style.display="block"}
+q.addEventListener("input",renderSugg);
+q.addEventListener("keydown",e=>{
+  if(e.key==="ArrowDown"&&list.length){hi=(hi+1)%list.length;e.preventDefault()}
+  else if(e.key==="ArrowUp"&&list.length){hi=(hi-1+list.length)%list.length;e.preventDefault()}
+  else if(e.key==="Enter"){ if(list[hi]) pick(list[hi]); return }
+  else if(e.key==="Escape"){sugg.style.display="none";return} else return;
+  [...sugg.children].forEach((b,i)=>b.classList.toggle("on",i===hi))});
+sugg.addEventListener("mousedown",e=>{const b=e.target.closest("button[data-i]"); if(b){e.preventDefault(); pick(list[+b.dataset.i])}});
+q.addEventListener("blur",()=>setTimeout(()=>sugg.style.display="none",120));
+
+["Tarsila do Amaral","Noel Rosa","Clarice Lispector","Frida Kahlo","Cartola","Lina Bo Bardi","Caetano Veloso","Monteiro Lobato"].forEach(n=>{
+  const p=DB.find(x=>x.n===n); const b=document.createElement("button"); b.textContent=n; b.onclick=()=>pick(p); $("chips").appendChild(b)});
+
+/* ---------- result ---------- */
+let timer=null, current=null;
+function pick(p){ current=p; sugg.style.display="none"; q.value=p.n; q.blur();
+  history.replaceState(null,"","#"+p.s);
+  const r=$("result"); r.classList.remove("show"); void r.offsetWidth; r.classList.add("show");
+  $("rWho").textContent=p.n+" · "+p.a+(p.d?" · morte em "+p.d:" · entre nós");
+  const v=$("rVerdict"), sub=$("rSub"), c=$("rCount"); clearInterval(timer); c.innerHTML="";
+  if(!p.d){ v.className="verdict lock"; v.textContent="Ainda não.";
+    sub.innerHTML=`${p.n} segue entre nós, então a obra continua protegida. Ela só passa a ser de todo mundo 70 anos depois da morte, contados a partir do 1º de janeiro seguinte.`;
+    setState("lock"); }
+  else if(p.free<=YEAR){ v.className="verdict free"; v.textContent="Sim, é de todo mundo.";
+    const y=YEAR-p.free; sub.innerHTML=`A obra de ${p.n} está em domínio público no Brasil desde <b>1º de janeiro de ${p.free}</b>${y>0?`, há ${y} ${y===1?"ano":"anos"}`:", este ano"}. Dá pra publicar, adaptar, ilustrar, regravar e remixar sem pedir licença.`;
+    setState("free"); }
+  else { v.className="verdict lock"; v.textContent="Ainda não.";
+    sub.innerHTML=`A obra de ${p.n} entra em domínio público em <b>1º de janeiro de ${p.free}</b>. Até lá, usar precisa de autorização de quem detém os direitos.`;
+    setState("lock"); tick(p); timer=setInterval(()=>tick(p),1000); }
+  $("rNote").textContent=(p.note?p.note+" ":"")+"Parcerias contam pela morte do último coautor, e gravações, traduções e edições têm direitos próprios. Veja a regra completa abaixo.";
+  setTimeout(()=>{const b=r.getBoundingClientRect(); if(b.top<60||b.bottom>innerHeight) r.scrollIntoView({behavior:"smooth",block:"center"})},60);
+}
+function tick(p){ const t=new Date(p.free,0,1,0,0,0); let s=Math.max(0,(t-new Date())/1000);
+  const yrs=Math.floor(s/31557600); s-=yrs*31557600; const d=Math.floor(s/86400); s-=d*86400; const h=Math.floor(s/3600); s-=h*3600; const m=Math.floor(s/60); const sec=Math.floor(s-m*60);
+  $("rCount").innerHTML=[[yrs,"anos"],[d,"dias"],[h,"horas"],[m,"min"],[sec,"seg"]].map(([n,l])=>`<div><b>${String(n).padStart(2,"0")}</b><span>${l}</span></div>`).join("")}
+$("again").onclick=()=>{window.scrollTo({top:0,behavior:"smooth"}); setTimeout(()=>{q.value="";q.focus()},400)};
+$("share").onclick=async()=>{ if(!current) return; const p=current;
+  const txt=!p.d?`A obra de ${p.n} ainda não é de todo mundo. E a do seu artista favorito?`:p.free<=YEAR?`A obra de ${p.n} já é de todo mundo desde ${p.free}. E a do seu artista favorito?`:`A obra de ${p.n} só vira domínio público em ${p.free}. E a do seu artista favorito?`;
+  const url=location.href.split("#")[0]+"#"+p.s;
+  try{ if(navigator.share){await navigator.share({title:"Já é de todo mundo?",text:txt,url}); return} }catch(e){return}
+  try{await navigator.clipboard.writeText(txt+" "+url); toast("Copiado! É só colar.")}catch(e){toast(url)} };
+function toast(t){const e=$("toast"); e.textContent=t; e.classList.add("on"); setTimeout(()=>e.classList.remove("on"),2200)}
+
+/* calculator */
+$("calcY").addEventListener("input",e=>{const y=+e.target.value; const o=$("calcOut");
+  if(!y||y<1000||y>2100){o.textContent="";return} const f=y+71;
+  o.style.color=f<=YEAR?"var(--free)":"var(--lock)";
+  o.textContent=f<=YEAR?`→ já é de todo mundo desde 1º jan ${f}`:`→ libera em 1º jan ${f} (faltam ${f-YEAR} ${f-YEAR===1?"ano":"anos"})`});
+
+/* ---------- time machine ---------- */
+const AREAS=["todos",L,M,A,Q,T,I]; let area="todos";
+$("filters").innerHTML=AREAS.map(a=>`<button data-a="${a}" class="${a===area?'on':''}">${a}</button>`).join("");
+$("filters").onclick=e=>{const b=e.target.closest("button"); if(!b) return; area=b.dataset.a; [...$("filters").children].forEach(x=>x.classList.toggle("on",x===b)); buildWall()};
+function buildWall(){ const items=DB.filter(p=>area==="todos"||p.a===area).sort((a,b)=>(a.d||9999)-(b.d||9999));
+  $("wall").innerHTML=items.map(p=>`<button data-s="${p.s}" title="${p.n}${p.d?' · '+p.d:' · entre nós'}">${p.n}</button>`).join("");
+  paintWall()}
+$("wall").onclick=e=>{const b=e.target.closest("button"); if(b) pick(DB.find(p=>p.s===b.dataset.s))};
+const yr=$("yr");
+function paintWall(){ const y=+yr.value; $("yearOut").textContent=y; let f=0,t=0;
+  [...$("wall").children].forEach(b=>{const p=DB.find(x=>x.s===b.dataset.s); t++; const isF=p.free&&p.free<=y; if(isF) f++;
+    b.classList.toggle("f",!!isF); b.classList.toggle("live",!p.d)});
+  $("tally").innerHTML=`Em <b>${y}</b>, <b>${f}</b> de ${t} nomes desta lista são de todo mundo.${y===YEAR?" Esse é o hoje.":y<YEAR?"":" Os nomes em itálico seguem entre nós, e o relógio deles nem começou."}`}
+yr.addEventListener("input",paintWall);
+yr.value=YEAR; buildWall();
+
+/* years lists */
+function yl(id,death){ $(id).innerHTML=DB.filter(p=>p.d===death).map(p=>`<li data-s="${p.s}"><span>${p.n}</span><small>${p.a}</small></li>`).join("");
+  $(id).onclick=e=>{const li=e.target.closest("li"); if(li) pick(DB.find(p=>p.s===li.dataset.s))}}
+yl("y2026",1955); yl("y2027",1956);
+$("foot").textContent=`Base inicial com ${DB.length} nomes, em crescimento. Achou um erro? Me avisa.`;
+
+/* ---------- © particles ---------- */
+const cv=$("cv"), cx=cv.getContext("2d"); let W,H,DPR,parts=[],state="idle",mouse={x:-1e4,y:-1e4};
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function sample(){ const o=document.createElement("canvas"); const S=260; o.width=o.height=S; const g=o.getContext("2d");
+  g.fillStyle="#000"; g.font=`400 ${S*0.95}px "Instrument Serif", serif`; g.textAlign="center"; g.textBaseline="middle"; g.fillText("©",S/2,S*0.56);
+  const d=g.getImageData(0,0,S,S).data, pts=[]; const step=4;
+  for(let y=0;y<S;y+=step) for(let x=0;x<S;x+=step) if(d[(y*S+x)*4+3]>128) pts.push([x/S,y/S]);
+  return pts}
+function resize(){ DPR=Math.min(2,devicePixelRatio||1); const r=cv.getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; cx.setTransform(DPR,0,0,DPR,0,0);
+  const pts=sample(); const old=parts; parts=pts.map((p,i)=>{const o=old[i]; return {hx:p[0]*W,hy:p[1]*H,x:o?o.x:p[0]*W,y:o?o.y:p[1]*H,vx:0,vy:0,r:Math.random()}})}
+function setState(s){ state=s; if(s==="free"){ parts.forEach(p=>{const a=Math.random()*Math.PI*2, v=4+Math.random()*10; p.vx+=Math.cos(a)*v; p.vy+=Math.sin(a)*v}) } }
+cv.addEventListener("pointermove",e=>{const r=cv.getBoundingClientRect(); mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top});
+cv.addEventListener("pointerleave",()=>{mouse.x=mouse.y=-1e4});
+cv.addEventListener("click",()=>{ if(state==="free"){state="idle"} else setState("free") });
+let tt=0;
+function loop(){ tt+=0.016; cx.clearRect(0,0,W,H);
+  const ink=css("--ink"), col=state==="free"?css("--free"):state==="lock"?css("--lock"):ink;
+  cx.fillStyle=col; const rad=Math.max(1.4,W/210);
+  for(const p of parts){
+    let tx=p.hx, ty=p.hy, k=0.06;
+    if(state==="free"){ // drift around like released
+      tx=p.hx+Math.sin(tt*0.6+p.r*20)*W*0.09*(0.5+p.r); ty=p.hy+Math.cos(tt*0.5+p.r*17)*H*0.09*(0.5+p.r); k=0.006 }
+    else if(state==="lock"){ tx+=Math.sin(tt*30+p.r*50)*0.6; k=0.12 }
+    p.vx+=(tx-p.x)*k; p.vy+=(ty-p.y)*k;
+    const dx=p.x-mouse.x, dy=p.y-mouse.y, d2=dx*dx+dy*dy, R=W*0.14;
+    if(d2<R*R){ const d=Math.sqrt(d2)||1, f=(1-d/R)*3.2; p.vx+=dx/d*f; p.vy+=dy/d*f }
+    p.vx*=0.86; p.vy*=0.86; p.x+=p.vx; p.y+=p.vy;
+    cx.beginPath(); cx.arc(p.x,p.y,rad,0,6.283); cx.fill(); }
+  requestAnimationFrame(loop)}
+(document.fonts?document.fonts.ready:Promise.resolve()).then(()=>{resize(); loop();
+  const h=location.hash.slice(1); if(h){const p=DB.find(x=>x.s===h); if(p) setTimeout(()=>pick(p),300)}});
+addEventListener("resize",()=>{clearTimeout(window._rz); window._rz=setTimeout(resize,150)});
+</script>
+</body>
+</html>
