@@ -44,16 +44,16 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .duo.color::after{display:none}
 
 /* ---------- top rule bar (editorial grid) ---------- */
-.top{position:relative;z-index:6;display:grid;grid-template-columns:1.35fr 1fr;border-bottom:1px solid var(--hair)}
-.top>div{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;padding:12px 22px}
-.top>div+div{border-left:1px solid var(--hair)}
-.top .brand{font-weight:700}
+.top{position:relative;z-index:6;display:flex;justify-content:space-between;align-items:baseline;gap:12px 24px;flex-wrap:wrap;padding:14px 22px;border-bottom:1px solid var(--hair)}
+.top .brand{font-weight:700;color:var(--paper);text-decoration:none}
+.top .id{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px}
+.top .sub{color:var(--mute-d);white-space:nowrap}
 .top a{text-decoration:none;color:var(--mute-d)} .top a:hover{color:var(--paper)}
-.top nav{display:flex;gap:18px;justify-content:flex-end;flex-wrap:wrap}
-.top small{display:block;color:var(--mute-d);margin-top:3px;text-transform:none;letter-spacing:0;font-size:12px;font-weight:400}
+.top nav{display:flex;gap:20px;flex-wrap:wrap}
+.top nav a+a::before{content:"·";margin-right:20px;color:var(--mute-d);opacity:.6}
 
 /* ---------- hero ---------- */
-.hero{display:grid;grid-template-columns:1.35fr 1fr;min-height:calc(100svh - 58px)}
+.hero{display:grid;grid-template-columns:1.35fr 1fr;min-height:calc(100svh - 45px)}
 .collage{position:relative;overflow:hidden;background:#2a2620;isolation:isolate;touch-action:pan-y}
 .collage .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transform:scale(1.04)}
 .collage::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(20,19,17,.15) 0%,rgba(20,19,17,0) 35%,rgba(20,19,17,.72) 100%)}
@@ -219,9 +219,7 @@ footer{padding:64px 22px 40px;border-top:1px solid var(--hair)}
 
 /* ---------- responsive ---------- */
 @media (max-width:980px){
-  .top{grid-template-columns:1fr}
-  .top>div+div{border-left:0;border-top:1px solid var(--hair)}
-  .top>div{padding:10px 16px}
+  .top{padding:12px 16px}
   .hero{grid-template-columns:1fr}
   .collage{min-height:66svh}
   .desk{border-left:0;padding:30px 16px 34px}
@@ -235,11 +233,9 @@ footer{padding:64px 22px 40px;border-top:1px solid var(--hair)}
   .fine{grid-template-columns:1fr}
 }
 @media (max-width:640px){
-  .top>div:first-child{grid-template-columns:1fr}
-  .top>div:first-child>div:last-child{display:none}
-  .top>div:last-child>div:first-child{display:none}
-  .top>div:last-child{grid-template-columns:1fr}
-  .top nav{justify-content:flex-start;gap:14px}
+  .top{display:grid;gap:6px}
+  .top nav{gap:12px}
+  .top nav a+a::before{margin-right:12px}
   .title{left:16px;right:16px;bottom:20px}
   .collage .bgcap{left:16px;top:14px}
   .collage .grid-lines{background:linear-gradient(90deg,transparent calc(50% - .5px),var(--hair) 0 calc(50% + .5px),transparent 0)}
@@ -278,14 +274,8 @@ footer{padding:64px 22px 40px;border-top:1px solid var(--hair)}
 </svg>
 
 <header class="top cap">
-  <div>
-    <div><span class="brand">Já é de todo mundo?</span><small>Domínio público no Brasil</small></div>
-    <div>Lei 9.610/98, art. 41<small>Vida do autor + 70 anos</small></div>
-  </div>
-  <div>
-    <div>Emissão 2026<small><span id="nNames">214</span> nomes no álbum</small></div>
-    <nav><a href="#album">Álbum</a><a href="#emissao">2027</a><a href="#regra">A regra</a><a href="#fontes">Fontes</a></nav>
-  </div>
+  <div class="id"><a class="brand" href="#consulta">Já é de todo mundo?</a><span class="sub">Domínio público no Brasil</span></div>
+  <nav aria-label="Seções"><a href="#album">Álbum</a><a href="#emissao">2027</a><a href="#regra">A regra</a><a href="#fontes">Fontes</a></nav>
 </header>
 
 <main>
@@ -489,7 +479,7 @@ const $=id=>document.getElementById(id);
 const initials=n=>n.replace(/^(A\. A\.|J\. R\. R\.)/,"").split(/\s+/).filter(w=>w.length>2&&!/^(de|da|do|dos|das|e)$/i.test(w)).slice(0,2).map(w=>w[0]).join("")||n[0];
 const SHORT={"literatura":"Letras","música":"Música","artes visuais":"Artes","arquitetura & design":"Arq. & design","teatro & TV":"Cena","internacional":"Mundo"};
 const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-$("nNames").textContent=DB.length;
+
 
 /* ---------- hero collage ---------- */
 const bg=EXT.moncao; $("bgImg").src=bg.h; $("bgCap").innerHTML=`<b>${bg.t}</b>${bg.c} · domínio público desde 1971`;
