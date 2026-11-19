@@ -237,6 +237,8 @@ footer{padding:64px 22px 40px;border-top:1px solid var(--hair)}
   .top nav{gap:12px}
   .top nav a+a::before{margin-right:12px}
   .title{left:16px;right:16px;bottom:20px}
+  .ghost{display:none}
+  .collage{min-height:80svh}
   .collage .bgcap{left:16px;top:14px}
   .collage .grid-lines{background:linear-gradient(90deg,transparent calc(50% - .5px),var(--hair) 0 calc(50% + .5px),transparent 0)}
   .sec-head{grid-template-columns:1fr}
@@ -484,11 +486,11 @@ const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&qu
 /* ---------- hero collage ---------- */
 const bg=EXT.moncao; $("bgImg").src=bg.h; $("bgCap").innerHTML=`<b>${bg.t}</b>${bg.c} · domínio público desde 1971`;
 const LOOSE=[
-  {n:"Vincent van Gogh",src:EXT.girassois,x:.55,y:.06,w:150,r:5,sh:"Van Gogh"},
-  {n:"Gustav Klimt",x:.07,y:.2,w:132,r:-7,sh:"Klimt"},
-  {n:"Chiquinha Gonzaga",x:.36,y:.13,w:116,r:-3,sh:"Chiquinha"},
-  {n:"Claude Monet",x:.69,y:.42,w:170,r:8,sh:"Monet"},
-  {n:"Machado de Assis",x:.23,y:.42,w:120,r:4,sh:"Machado"},
+  {n:"Vincent van Gogh",src:EXT.girassois,x:.55,y:.06,w:150,r:5,sh:"Van Gogh",m:[238,18,112]},
+  {n:"Gustav Klimt",x:.07,y:.2,w:132,r:-7,sh:"Klimt",m:[14,40,96]},
+  {n:"Chiquinha Gonzaga",x:.36,y:.13,w:116,r:-3,sh:"Chiquinha",m:[128,6,88]},
+  {n:"Claude Monet",x:.69,y:.42,w:170,r:8,sh:"Monet",m:[172,184,158]},
+  {n:"Machado de Assis",x:.23,y:.42,w:120,r:4,sh:"Machado",m:[34,192,92]},
   {n:"Eliseu Visconti",x:.82,y:.1,w:118,r:-5,sh:"Visconti"},
 ];
 const col=$("collage"); let zTop=10;
@@ -497,8 +499,14 @@ LOOSE.forEach((L0,i)=>{const p=DB.find(x=>x.n===L0.n); const im=L0.src||p.img; i
   el.style.setProperty("--ar", im.k==="a"?(1/im.r).toFixed(3):"4/5");
   el.innerHTML=`<div class="perf"><div class="duo ${im.k==="a"?"color":""}"><img src="${im.x}" alt="${esc(im.t||p.n)}" draggable="false"></div><div class="meta"><span>${esc(L0.sh)}</span><b>${p.free}</b></div></div>`;
   el.style.transform=`rotate(${L0.r}deg)`; col.appendChild(el);
-  const place=()=>{const W=col.clientWidth,H=col.clientHeight; const small=W<640; const sc=small?.72:1; el.style.width=(L0.w*sc)+"px";
-    el.style.left=Math.min(W-L0.w*sc-8,Math.max(8,L0.x*W))+"px"; el.style.top=Math.min(H*.62,Math.max(44,L0.y*H+ (small?30:40)))+"px"};
+  const place=()=>{const W=col.clientWidth,H=col.clientHeight;
+    if(W<640){ /* phone: own layout, kept between the caption and the title */
+      if(!L0.m){el.style.display="none";return} el.style.display="";
+      const top0=86, band=col.querySelector(".title").offsetTop-top0-10, k=W/375, ky=band/330, w=L0.m[2]*Math.min(k,ky,1.2);
+      el.style.width=w+"px"; el.style.left=Math.min(W-w-6,L0.m[0]*k)+"px"; el.style.top=(top0+L0.m[1]*ky)+"px"; return}
+    el.style.display=""; el.style.width=L0.w+"px";
+    el.style.left=Math.min(W-L0.w-8,Math.max(8,L0.x*W))+"px";
+    el.style.top=Math.max(44,Math.min(H*.62,L0.y*H+40,col.querySelector(".title").offsetTop-el.offsetHeight-14))+"px"};
   place(); addEventListener("resize",place);
   const img=el.querySelector("img"); const crisp=()=>{if(img.dataset.c) return; img.dataset.c=1; const hi=new Image(); hi.onload=()=>{img.src=im.s; img.style.imageRendering="auto"}; hi.src=im.s};
   el.addEventListener("pointerenter",crisp);
